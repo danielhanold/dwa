@@ -1,0 +1,61 @@
+<?php
+
+/**
+ * @file
+ * API functionality for DWA.
+ */
+
+/**
+ * Implements hook_image_default_styles().
+ */
+function dwa_api_image_default_styles() {
+  $styles = array();
+
+  $styles['site-screenshot'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale', 
+        'data' => array(
+          'width' => 680,
+          'height' => null,
+          'upscale' => 0,
+        ),
+        'weight' => 1,
+      ),
+      array(
+        'name' => 'image_crop', 
+        'data' => array(
+          'width' => 680,
+          'height' => 435,
+          'anchor' => 'left-top',
+        ),
+        'weight' => 2,
+      ),
+    ),
+  );
+  
+  $styles['site-thumb'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale', 
+        'data' => array(
+          'width' => 155,
+          'height' => null,
+          'upscale' => 0,
+        ),
+        'weight' => 1,
+      ),
+      array(
+        'name' => 'image_crop', 
+        'data' => array(
+          'width' => 155,
+          'height' => 100,
+          'anchor' => 'left-top',
+        ),
+        'weight' => 2,
+      ),
+    ),
+  );  
+
+  return $styles;
+}

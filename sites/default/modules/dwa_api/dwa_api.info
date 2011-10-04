@@ -1,0 +1,6 @@
+name = DWA API
+description = "API functionality for DWA"
+package = DWA
+core = 7.x
+files[] = dwa_api.install
+files[] = dwa_api.module
