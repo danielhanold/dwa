@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Provides voting logic for Favorite Website Awards.
+ */
+define('DWA_VOTING_SITE_TYPE_SOD', 1);
+define('DWA_VOTING_SITE_TYPE_SOW', 2);
+define('DWA_VOTING_SITE_TYPE_SOM', 3);
+
+/**
+ * Implements hook_flag().
+ */
+function dwa_voting_flag($action, $flag, $content_id, $account) {
+  // Disallow voting for anonymous users.
+
+  // When a site gets flagged, track that action in the database.
+  if ($action == 'flag' && in_array('site', $flag->types) && ($flag->name == 'sod' || $flag->name == 'sow' || $flag->name == 'som')) {
+    // Determine the type of vote.
+    switch ($flag->name) {
+      case 'sod': $type = DWA_VOTING_SITE_TYPE_SOD; break;
+      case 'sow': $type = DWA_VOTING_SITE_TYPE_SOW; break;
+      case 'som': $type = DWA_VOTING_SITE_TYPE_SOM; break;
+    }
+
+    // Disallow voting if a user has already done so.
+    // Determine if the current user has already cast his vote for the site of the day.
+    $query = db_select('dwa_voting', 'dv');
+    $query->fields('dv', array('vid'));
+    $query->condition('dv.uid', $account->uid);
+    $query->condition('dv.type', $type);
+    $query->range(0, 1);
+    $result = $query->execute();
+    $existing_vote = $result->fetchField();
+    
+    /**
+     * Unflag the site right after it has been flagged.
+     * @see http://drupal.org/node/1008768#comment-3873374
+     * This http://drupal.org/node/955724 didn't work.
+     */
+    if ($existing_vote) {
+      $flag->flag('unflag', $content_id, $account);
+      $flag->flag_message = $flag->unflag_message = "You can only flag 1 site per day.";
+      return;
+    }
+    
+    $table = 'dwa_voting';
+    $record = new stdClass();
+    $record->uid = $account->uid;
+    $record->nid = $content_id;
+    $record->type = $type;
+    $record->timestamp = time();
+    drupal_write_record($table, &$record);
+  }
+}

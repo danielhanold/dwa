@@ -1,0 +1,6 @@
+name = DWA Voting
+description = "Voting functionality for DWA"
+package = DWA
+core = 7.x
+files[] = dwa_voting.install
+files[] = dwa_voting.module
