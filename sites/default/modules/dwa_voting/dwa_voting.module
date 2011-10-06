@@ -24,23 +24,17 @@ function dwa_voting_flag($action, $flag, $content_id, $account) {
     }
 
     // Disallow voting if a user has already done so.
-    // Determine if the current user has already cast his vote for the site of the day.
-    $query = db_select('dwa_voting', 'dv');
-    $query->fields('dv', array('vid'));
-    $query->condition('dv.uid', $account->uid);
-    $query->condition('dv.type', $type);
-    $query->range(0, 1);
-    $result = $query->execute();
-    $existing_vote = $result->fetchField();
-    
-    /**
-     * Unflag the site right after it has been flagged.
-     * @see http://drupal.org/node/1008768#comment-3873374
-     * This http://drupal.org/node/955724 didn't work.
-     */
-    if ($existing_vote) {
+    // Unflag the site right after it has been flagged.
+    // @see http://drupal.org/node/1008768#comment-3873374
+    // This http://drupal.org/node/955724 didn't work.
+    if (dwa_voting_voted($type, $account->uid)) {
       $flag->flag('unflag', $content_id, $account);
-      $flag->flag_message = $flag->unflag_message = "You can only flag 1 site per day.";
+      switch ($flag->name) {
+         case 'sod': $award_name = "Site of the Day"; break;
+         case 'sow': $award_name = "Site of the Week"; break;
+         case 'som': $award_name = "Site of the Month"; break;
+      }
+      $flag->flag_message = $flag->unflag_message = t('You can only cast 1 vote for "!award_name" per day.', array('!award_name' => $award_name));
       return;
     }
     
@@ -52,4 +46,37 @@ function dwa_voting_flag($action, $flag, $content_id, $account) {
     $record->timestamp = time();
     drupal_write_record($table, &$record);
   }
+}
+
+
+
+/**
+ * Check if a user has already cast a vote
+ * for one of the awards.
+ *
+ * @param $type
+ *   Type of vote.
+ * @param $uid
+ *   User Id (optional), defaults to logged-in user.
+ */
+function dwa_voting_voted($type = '', $uid = '') {
+  // If no uid is passed, default to current user.
+  if ($uid == '') {
+    $uid = $GLOBALS['user']->uid;
+  }
+  
+  // Make sure type is valid.
+  $available_types = array(DWA_VOTING_SITE_TYPE_SOD,DWA_VOTING_SITE_TYPE_SOW,DWA_VOTING_SITE_TYPE_SOM);
+  if (!in_array($type, $available_types)) {
+    return false;
+  }
+
+  // Determine if the current user has already cast his vote for the site of the day.
+  $query = db_select('dwa_voting', 'dv');
+  $query->fields('dv', array('vid'));
+  $query->condition('dv.uid', $uid);
+  $query->condition('dv.type', $type);
+  $query->range(0, 1);
+  $result = $query->execute();
+  return $result->fetchField();
 }
