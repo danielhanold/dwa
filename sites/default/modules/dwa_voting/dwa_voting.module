@@ -7,6 +7,9 @@
 define('DWA_VOTING_SITE_TYPE_SOD', 1);
 define('DWA_VOTING_SITE_TYPE_SOW', 2);
 define('DWA_VOTING_SITE_TYPE_SOM', 3);
+define('DWA_VOTING_FID_SOD', variable_get('dwa_voting_fid_sod', 5));
+define('DWA_VOTING_FID_SOW', variable_get('dwa_voting_fid_sod', 6));
+define('DWA_VOTING_FID_SOM', variable_get('dwa_voting_fid_sod', 7));
 
 /**
  * Implements hook_block_info().
@@ -35,15 +38,134 @@ function dwa_voting_block_view($block_name = '') {
           return false;        
         }
       }
+      else {
+        return false;
+      }
       
       // Determine node content.
       $block = array(
         'subject' => t('Vote for this Site'),
-        'content' => 'Voting for ' . $node->title,
+        'content' => dwa_voting_block_content($node),
       );
       
       return $block;
   }
+}
+
+
+
+/**
+ * Implements hook_flag_default_flags().
+ */
+function dwa_voting_flag_default_flags() {
+  $flags = array();
+  
+  // Exported flag: "Site of the Day".
+  $flags['sod'] = array (
+    'content_type' => 'node',
+    'title' => 'Site of the Day',
+    'global' => '0',
+    'types' => 
+    array (
+      0 => 'site',
+    ),
+    'flag_short' => 'Vote "Site of the Day"',
+    'flag_long' => 'Vote this site for the "Site of the Day" award',
+    'flag_message' => 'Voted as "Site of the Day"',
+    'unflag_short' => 'Remove your vote for "Site of the Day"',
+    'unflag_long' => 'Remove your vote for the "Site of the Day" award',
+    'unflag_message' => 'Un-Voted as "Site of the Day"',
+    'unflag_denied_text' => 'You cannot change your vote for "Site of the Day"',
+    'link_type' => 'normal',
+    'roles' => 
+    array (
+      'flag' => 
+      array (
+        0 => '2',
+      ),
+      'unflag' => 
+      array (
+      ),
+    ),
+    'show_on_page' => 1,
+    'show_on_teaser' => 0,
+    'show_on_form' => 0,
+    'access_author' => '',
+    'i18n' => 0,
+    'api_version' => 2,
+  );
+  
+  // Exported flag: "Site of the Week".
+  $flags['sow'] = array (
+    'content_type' => 'node',
+    'title' => 'Site of the Week',
+    'global' => '0',
+    'types' => 
+    array (
+      0 => 'site',
+    ),
+    'flag_short' => 'Vote "Site of the Week"',
+    'flag_long' => 'Vote this site for the "Site of the Week" award',
+    'flag_message' => 'Votes as "Site of the Week"',
+    'unflag_short' => 'Remove your vote for "Site of the Week"',
+    'unflag_long' => 'Remove your vote for the "Site of the Week" award',
+    'unflag_message' => 'Un-Voted as "Site of the Month"',
+    'unflag_denied_text' => 'You cannot change your vote for "Site of the Week"',
+    'link_type' => 'toggle',
+    'roles' => 
+    array (
+      'flag' => 
+      array (
+        0 => '2',
+      ),
+      'unflag' => 
+      array (
+      ),
+    ),
+    'show_on_page' => 1,
+    'show_on_teaser' => 0,
+    'show_on_form' => 0,
+    'access_author' => '',
+    'i18n' => 0,
+    'api_version' => 2,
+  );
+  
+  // Exported flag: "Site of the Month".
+  $flags['som'] = array (
+    'content_type' => 'node',
+    'title' => 'Site of the Month',
+    'global' => '0',
+    'types' => 
+    array (
+      0 => 'site',
+    ),
+    'flag_short' => 'Vote "Site of the Month"',
+    'flag_long' => 'Vote this site for the "Site of the Month" award',
+    'flag_message' => 'Voted as "Site of the Month"',
+    'unflag_short' => 'Remove your vote for "Site of the Month"',
+    'unflag_long' => 'Remove your vote for the "Site of the Month" award',
+    'unflag_message' => 'Un-Voted as "Site of the Month"',
+    'unflag_denied_text' => 'You cannot change your vote for "Site of the Month"',
+    'link_type' => 'toggle',
+    'roles' => 
+    array (
+      'flag' => 
+      array (
+        0 => '2',
+      ),
+      'unflag' => 
+      array (
+      ),
+    ),
+    'show_on_page' => 1,
+    'show_on_teaser' => 0,
+    'show_on_form' => 0,
+    'access_author' => '',
+    'i18n' => 0,
+    'api_version' => 2,
+  );
+  
+  return $flags;  
 }
 
 
@@ -119,4 +241,31 @@ function dwa_voting_voted($type = '', $uid = '') {
   $query->range(0, 1);
   $result = $query->execute();
   return $result->fetchField();
+}
+
+
+
+/**
+ * Prepare content for site voting block.
+ *
+ * @params $node
+ *   Site Node.
+ *
+ * @return
+ *   Themed content.
+ */
+function dwa_voting_block_content($node) {
+  dpm($node);
+ 
+  // Determine if the current user has cast a vote for this site.
+  $query = db_select('flag_content', 'fc');
+  $query->fields('fc');
+  $query->condition('fc.content_id', $node->nid);
+  $query->condition('fc.fid', array(DWA_VOTING_FID_SOD, DWA_VOTING_FID_SOW, DWA_VOTING_FID_SOM), 'IN');
+  $result = $query->execute();
+  foreach ($result as $record) {
+    dpm($record);
+  } 
+  
+  return $node->title;
 }
