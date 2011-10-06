@@ -9,6 +9,46 @@ define('DWA_VOTING_SITE_TYPE_SOW', 2);
 define('DWA_VOTING_SITE_TYPE_SOM', 3);
 
 /**
+ * Implements hook_block_info().
+ */
+function dwa_voting_block_info() {
+  $blocks = array();
+  
+  $blocks['voting'] = array(
+    'info' => t('Site Voting'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+
+/**
+ * Implements hook_block_view().
+ */
+function dwa_voting_block_view($block_name = '') {
+  switch ($block_name) {
+    case 'voting':
+      // Don't show this block on non-site nodes.
+      if (arg(0) == 'node' && is_numeric(arg(1))) {
+        $node = node_load(arg(1));
+        if ($node->type != 'site') {
+          return false;        
+        }
+      }
+      
+      // Determine node content.
+      $block = array(
+        'subject' => t('Vote for this Site'),
+        'content' => 'Voting for ' . $node->title,
+      );
+      
+      return $block;
+  }
+}
+
+
+
+/**
  * Implements hook_flag().
  */
 function dwa_voting_flag($action, $flag, $content_id, $account) {
