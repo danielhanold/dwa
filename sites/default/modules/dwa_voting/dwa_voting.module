@@ -255,13 +255,76 @@ function dwa_voting_voted($type = '', $uid = '') {
  *   Themed content.
  */
 function dwa_voting_block_content($node) {
-  dpm($node);
- 
   // Determine if the current user has cast a vote for this site.
-  $votes = dwa_voting_get_site_votes($node->nid);
-  dpm($votes);
+  $votes_node = dwa_voting_get_user_site_votes($node->nid, $GLOBALS['user']->uid);
+  
+  // Determine if the user can vote again.
+  $votes_last = dwa_voting_get_last_user_votes($GLOBALS['user']->uid);
   
   return $node->title;
+}
+
+
+
+/**
+ * Determine the last time a user has voted on all available types.
+ * 
+ * @param $uid
+ *   User ID, defaults to current user.
+ * 
+ * @return
+ *   Array of last votes.
+ */
+function dwa_voting_get_last_user_votes($uid) {
+  if (!isset($uid)) {
+    $uid = $GLOBALS['user']->uid;
+  }
+    
+  $votes = array();
+  $flag_ids = array(DWA_VOTING_FID_SOD, DWA_VOTING_FID_SOW, DWA_VOTING_FID_SOM);
+  foreach ($flag_ids as $flag_id) {
+    $query = db_select('flag_content', 'fc');
+    $query->fields('fc');
+    $query->condition('fc.uid', $uid);
+    $query->condition('fc.fid', $flag_id);
+    $query->range(0, 1);
+    $query->orderBy('timestamp', 'DESC');
+    $result = $query->execute();
+    $record = $result->fetchObject();
+    $award_id = _dwa_voting_map_flag_award($flag_id);    
+    if (is_object($record)) {
+      $votes[$award_id] = array(
+        'award_id' => $award_id,
+        'timestamp' => $record->timestamp,
+        'site_nid' => $record->content_id,
+      );
+    }
+    else {
+      $votes[$award_id] = array();
+    }
+  }
+ 
+  // Every user has 1 vote per award type per day.
+  // Add additional information for each vote.
+  // 1. Boolean Indicator if user can vote for this award
+  // 2. Duration until next vote is allowed.
+  foreach ($votes as $id => $vote) {
+    // If the user has never voted before or
+    // the last vote for this award was yesterday,
+    // the user can vote again.
+    if (empty($vote) || (isset($vote['timestamp']) && ($vote['timestamp'] < strtotime("today")))) {
+      $votes[$id]['wait'] = 0;
+      $votes[$id]['voteable'] = true;
+    }
+    // If the user has voted for this award today,
+    // calculate the duration until he can vote again.
+    else {
+      $votes[$id]['wait'] = strtotime("tomorrow") - $vote['timestamp'];
+      $votes[$id]['voteable'] = false;
+    }
+  }
+  
+  return $votes;
 }
 
 
@@ -271,19 +334,26 @@ function dwa_voting_block_content($node) {
  *
  * @param $nid
  *   Node ID.
+ * @param $uid
+ *   Uid, defaults to current user.
+ *
  * @return
  *   Array of votes.
  */
-function dwa_voting_get_site_votes($nid) {
+function dwa_voting_get_user_site_votes($nid, $uid) {
   if (!isset($nid)) {
     return false;
+  }
+  
+  if (!isset($uid)) {
+    $uid = $GLOBALS['user']->uid;    
   }
   
   $votes = array();
   $query = db_select('flag_content', 'fc');
   $query->fields('fc');
   $query->condition('fc.content_id', $nid);
-  $query->condition('fc.uid', $GLOBALS['user']->uid);  
+  $query->condition('fc.uid', $uid);  
   $query->condition('fc.fid', array(DWA_VOTING_FID_SOD, DWA_VOTING_FID_SOW, DWA_VOTING_FID_SOM), 'IN');
   $result = $query->execute();
   
