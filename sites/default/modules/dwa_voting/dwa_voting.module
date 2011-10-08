@@ -7,6 +7,9 @@
 define('DWA_VOTING_AWARD_ID_SOD', 1);
 define('DWA_VOTING_AWARD_ID_SOW', 2);
 define('DWA_VOTING_AWARD_ID_SOM', 3);
+define('DWA_VOTING_AWARD_NAME_SOD', t('Site of the Day'));
+define('DWA_VOTING_AWARD_NAME_SOW', t('Site of the Week'));
+define('DWA_VOTING_AWARD_NAME_SOM', t('Site of the Month'));
 define('DWA_VOTING_FID_SOD', variable_get('dwa_voting_fid_sod', 5));
 define('DWA_VOTING_FID_SOW', variable_get('dwa_voting_fid_sod', 6));
 define('DWA_VOTING_FID_SOM', variable_get('dwa_voting_fid_sod', 7));
@@ -171,81 +174,6 @@ function dwa_voting_flag_default_flags() {
 
 
 /**
- * Implements hook_flag().
- */
-function dwa_voting_flag($action, $flag, $content_id, $account) {
-  // Disallow voting for anonymous users.
-
-  // When a site gets flagged, track that action in the database.
-  if ($action == 'flag' && in_array('site', $flag->types) && ($flag->name == 'sod' || $flag->name == 'sow' || $flag->name == 'som')) {
-    // Determine the type of vote.
-    switch ($flag->name) {
-      case 'sod': $type = DWA_VOTING_AWARD_ID_SOD; break;
-      case 'sow': $type = DWA_VOTING_AWARD_ID_SOW; break;
-      case 'som': $type = DWA_VOTING_AWARD_ID_SOM; break;
-    }
-
-    // Disallow voting if a user has already done so.
-    // Unflag the site right after it has been flagged.
-    // @see http://drupal.org/node/1008768#comment-3873374
-    // This http://drupal.org/node/955724 didn't work.
-    if (dwa_voting_voted($type, $account->uid)) {
-      $flag->flag('unflag', $content_id, $account);
-      switch ($flag->name) {
-         case 'sod': $award_name = "Site of the Day"; break;
-         case 'sow': $award_name = "Site of the Week"; break;
-         case 'som': $award_name = "Site of the Month"; break;
-      }
-      $flag->flag_message = $flag->unflag_message = t('You can only cast 1 vote for "!award_name" per day.', array('!award_name' => $award_name));
-      return;
-    }
-    
-    $table = 'dwa_voting';
-    $record = new stdClass();
-    $record->uid = $account->uid;
-    $record->nid = $content_id;
-    $record->type = $type;
-    $record->timestamp = time();
-    drupal_write_record($table, &$record);
-  }
-}
-
-
-
-/**
- * Check if a user has already cast a vote
- * for one of the awards.
- *
- * @param $type
- *   Type of vote.
- * @param $uid
- *   User Id (optional), defaults to logged-in user.
- */
-function dwa_voting_voted($type = '', $uid = '') {
-  // If no uid is passed, default to current user.
-  if ($uid == '') {
-    $uid = $GLOBALS['user']->uid;
-  }
-  
-  // Make sure type is valid.
-  $available_types = array(DWA_VOTING_AWARD_ID_SOD,DWA_VOTING_AWARD_ID_SOW,DWA_VOTING_AWARD_ID_SOM);
-  if (!in_array($type, $available_types)) {
-    return false;
-  }
-
-  // Determine if the current user has already cast his vote for the site of the day.
-  $query = db_select('dwa_voting', 'dv');
-  $query->fields('dv', array('vid'));
-  $query->condition('dv.uid', $uid);
-  $query->condition('dv.type', $type);
-  $query->range(0, 1);
-  $result = $query->execute();
-  return $result->fetchField();
-}
-
-
-
-/**
  * Prepare content for site voting block.
  *
  * @params $node
@@ -260,8 +188,39 @@ function dwa_voting_block_content($node) {
   
   // Determine if the user can vote again.
   $votes_last = dwa_voting_get_last_user_votes($GLOBALS['user']->uid);
+
+  $data = array();
   
-  return $node->title;
+  // Display a flag link for sod if:
+  // - This site hasn't already been voted for sod
+  // - The user has not already voted for this site
+  // - The user can still vote for sod today
+  $data[] = t('Site of the Day');
+  if (isset($node->field_site_award_day['und']['0']['value'])) {
+    $data[] = t('This site has already been voted "Site of the Day" on !date', array('!date' => format_date($node->field_site_award_day['und']['0']['value'], 'custom', 'F j, Y')));
+  }
+  else if (isset($votes_node[1])) {
+    $data[] = t('You already voted this site for "Site of the Day" on !date', array('!date' => format_date($votes_node[1]['timestamp'], 'custom', 'F j, Y')));
+  }
+  else if ($votes_last[1]['voteable'] === false) {
+    $data[] = t('You already voted this site for "Site of the Day" on !date', array('!date' => format_date($votes_last[1]['timestamp'], 'custom', 'F j, Y')));
+  }
+
+  return implode("<br />", $data);
+  
+  $data = array();
+  // Add information about the votes this user has cast for this site.
+  if (!empty($votes_node)) {
+    foreach ($votes_node as $vote) {
+      $replacements = array(
+        '!award_name' => _dwa_voting_award_name($vote['award_id']),
+        '!date' => format_date($vote['timestamp'], 'custom', 'F j'),
+      );
+      $data['award' . $vote['award_id']] = t('You already voted this site for "!award_name" on !date', $replacements);
+    }
+  }
+  
+  return implode("<br />", $data);
 }
 
 
@@ -391,4 +350,24 @@ function _dwa_voting_map_flag_award($flag_id) {
   );
 
   return $award_flag_map[$flag_id];
+}
+
+
+
+/**
+ * Helper function: Return the name of an award.
+ */
+function _dwa_voting_award_name($award_id) {
+  if (!isset($award_id)) {
+    return false;
+  }
+  
+  switch ($award_id) {
+     case 1:  $award_name = DWA_VOTING_AWARD_NAME_SOD; break;
+     case 2:  $award_name = DWA_VOTING_AWARD_NAME_SOW; break;
+     case 3:  $award_name = DWA_VOTING_AWARD_NAME_SOM; break;
+     default: $award_name = "Award";
+  }
+  
+  return $award_name;
 }
