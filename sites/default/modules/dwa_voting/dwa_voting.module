@@ -11,15 +11,18 @@ define('DWA_VOTING_AWARD_NAME_SOD', t('Site of the Day'));
 define('DWA_VOTING_AWARD_NAME_SOW', t('Site of the Week'));
 define('DWA_VOTING_AWARD_NAME_SOM', t('Site of the Month'));
 define('DWA_VOTING_FID_SOD', variable_get('dwa_voting_fid_sod', 5));
-define('DWA_VOTING_FID_SOW', variable_get('dwa_voting_fid_sod', 6));
-define('DWA_VOTING_FID_SOM', variable_get('dwa_voting_fid_sod', 7));
+define('DWA_VOTING_FID_SOW', variable_get('dwa_voting_fid_sow', 6));
+define('DWA_VOTING_FID_SOM', variable_get('dwa_voting_fid_som', 7));
+define('DWA_VOTING_FLAG_NAME_SOD', variable_get('dwa_voting_flag_name_sod', 'sod'));
+define('DWA_VOTING_FLAG_NAME_SOW', variable_get('dwa_voting_flag_name_sow', 'sow'));
+define('DWA_VOTING_FLAG_NAME_SOM', variable_get('dwa_voting_flag_name_som', 'som'));
 
 /**
  * Implements hook_block_info().
  */
 function dwa_voting_block_info() {
   $blocks = array();
-  
+
   $blocks['voting'] = array(
     'info' => t('Site Voting'),
     'cache' => DRUPAL_NO_CACHE,
@@ -38,19 +41,19 @@ function dwa_voting_block_view($block_name = '') {
       if (arg(0) == 'node' && is_numeric(arg(1))) {
         $node = node_load(arg(1));
         if ($node->type != 'site') {
-          return false;        
+          return false;
         }
       }
       else {
         return false;
       }
-      
+
       // Determine node content.
       $block = array(
         'subject' => t('Vote for this Site'),
         'content' => dwa_voting_block_content($node),
       );
-      
+
       return $block;
   }
 }
@@ -62,13 +65,13 @@ function dwa_voting_block_view($block_name = '') {
  */
 function dwa_voting_flag_default_flags() {
   $flags = array();
-  
+
   // Exported flag: "Site of the Day".
   $flags['sod'] = array (
     'content_type' => 'node',
     'title' => 'Site of the Day',
     'global' => '0',
-    'types' => 
+    'types' =>
     array (
       0 => 'site',
     ),
@@ -80,13 +83,13 @@ function dwa_voting_flag_default_flags() {
     'unflag_message' => 'Un-Voted as "Site of the Day"',
     'unflag_denied_text' => 'You cannot change your vote for "Site of the Day"',
     'link_type' => 'normal',
-    'roles' => 
+    'roles' =>
     array (
-      'flag' => 
+      'flag' =>
       array (
         0 => '2',
       ),
-      'unflag' => 
+      'unflag' =>
       array (
       ),
     ),
@@ -97,13 +100,13 @@ function dwa_voting_flag_default_flags() {
     'i18n' => 0,
     'api_version' => 2,
   );
-  
+
   // Exported flag: "Site of the Week".
   $flags['sow'] = array (
     'content_type' => 'node',
     'title' => 'Site of the Week',
     'global' => '0',
-    'types' => 
+    'types' =>
     array (
       0 => 'site',
     ),
@@ -115,13 +118,13 @@ function dwa_voting_flag_default_flags() {
     'unflag_message' => 'Un-Voted as "Site of the Month"',
     'unflag_denied_text' => 'You cannot change your vote for "Site of the Week"',
     'link_type' => 'toggle',
-    'roles' => 
+    'roles' =>
     array (
-      'flag' => 
+      'flag' =>
       array (
         0 => '2',
       ),
-      'unflag' => 
+      'unflag' =>
       array (
       ),
     ),
@@ -132,13 +135,13 @@ function dwa_voting_flag_default_flags() {
     'i18n' => 0,
     'api_version' => 2,
   );
-  
+
   // Exported flag: "Site of the Month".
   $flags['som'] = array (
     'content_type' => 'node',
     'title' => 'Site of the Month',
     'global' => '0',
-    'types' => 
+    'types' =>
     array (
       0 => 'site',
     ),
@@ -150,13 +153,13 @@ function dwa_voting_flag_default_flags() {
     'unflag_message' => 'Un-Voted as "Site of the Month"',
     'unflag_denied_text' => 'You cannot change your vote for "Site of the Month"',
     'link_type' => 'toggle',
-    'roles' => 
+    'roles' =>
     array (
-      'flag' => 
+      'flag' =>
       array (
         0 => '2',
       ),
-      'unflag' => 
+      'unflag' =>
       array (
       ),
     ),
@@ -167,8 +170,8 @@ function dwa_voting_flag_default_flags() {
     'i18n' => 0,
     'api_version' => 2,
   );
-  
-  return $flags;  
+
+  return $flags;
 }
 
 
@@ -183,54 +186,90 @@ function dwa_voting_flag_default_flags() {
  *   Themed content.
  */
 function dwa_voting_block_content($node) {
-  // Determine if the current user has cast a vote for this site.
-  $votes_node = dwa_voting_get_user_site_votes($node->nid, $GLOBALS['user']->uid);
-  
-  // Determine if the user can vote again.
-  $votes_last = dwa_voting_get_last_user_votes($GLOBALS['user']->uid);
-
+  // Generate a link to display a link for the sod award.
+  $data_sod = dwa_voting_generate_link(DWA_VOTING_AWARD_ID_SOD, $node);
   $data = array();
-  
-  // Display a flag link for sod if:
-  // - This site hasn't already been voted for sod
-  // - The user has not already voted for this site
-  // - The user can still vote for sod today
-  $data[] = t('Site of the Day');
-  if (isset($node->field_site_award_day['und']['0']['value'])) {
-    $data[] = t('This site has already been voted "Site of the Day" on !date', array('!date' => format_date($node->field_site_award_day['und']['0']['value'], 'custom', 'F j, Y')));
-  }
-  else if (isset($votes_node[1])) {
-    $data[] = t('You already voted this site for "Site of the Day" on !date', array('!date' => format_date($votes_node[1]['timestamp'], 'custom', 'F j, Y')));
-  }
-  else if ($votes_last[1]['voteable'] === false) {
-    $data[] = t('You already voted this site for "Site of the Day" on !date', array('!date' => format_date($votes_last[1]['timestamp'], 'custom', 'F j, Y')));
-  }
-
-  return implode("<br />", $data);
-  
-  $data = array();
-  // Add information about the votes this user has cast for this site.
-  if (!empty($votes_node)) {
-    foreach ($votes_node as $vote) {
-      $replacements = array(
-        '!award_name' => _dwa_voting_award_name($vote['award_id']),
-        '!date' => format_date($vote['timestamp'], 'custom', 'F j'),
-      );
-      $data['award' . $vote['award_id']] = t('You already voted this site for "!award_name" on !date', $replacements);
-    }
-  }
-  
-  return implode("<br />", $data);
+  $data['title_sod'] = $data_sod['award_name'];
+  $data['link'] = $data_sod['display'];
+  return implode('<br />', $data);
 }
 
 
 
 /**
+ * Generate array of data related to voting links.
+ */
+function dwa_voting_generate_link($award_id, $node) {
+  // Needs to be a valid award id and site node.
+  $award_ids = array(DWA_VOTING_AWARD_ID_SOD, DWA_VOTING_AWARD_ID_SOW, DWA_VOTING_AWARD_ID_SOM);
+  if (!in_array($award_id, $award_ids) || !is_object($node) || (is_object($node) && $node->type != 'site')) {
+    return false;
+  }
+
+  // Determine if the current user has cast a vote for this site.
+  $votes_node = dwa_voting_get_user_site_votes($node->nid, $GLOBALS['user']->uid);
+
+  // Determine if the user can vote again.
+  $votes_last = dwa_voting_get_last_user_votes($GLOBALS['user']->uid);
+
+  // Aggregate data for vote link.
+  $data = array();
+
+  // Award Name.
+  $data['award_name'] = t('Site of the Day');
+
+  // Set the votability of this link to false by default.
+  $data['voteable'] = false;
+
+  // Store additional data.
+  $data['votes_node'] = $votes_node;
+  $data['votes_last'] = $votes_last;
+
+  // Voting Link. Display a flag link for this award if:
+  // - This site hasn't already been voted for this award
+  // - The user has not already voted for this site
+  // - The user can still vote for this award today
+  switch ($award_id) {
+    case 1: $field_name = 'field_site_award_day'; break;
+    case 2: $field_name = 'field_site_award_week'; break;
+    case 3: $field_name = 'field_site_award_month'; break;
+  }
+  if (isset($node->{$field_name}['und']['0']['value'])) {
+    $replacements = array(
+      '!award_name' => $data['award_name'],
+      '!date' => format_date($node->{$field_name}['und']['0']['value'], 'custom', 'F j, Y'),
+    );
+    $data['display'] = t('This site has already been voted "!award_name" on !date.', $replacements);
+  }
+  else if (isset($votes_node[$award_id])) {
+    $replacements = array(
+      '!award_name' => $data['award_name'],
+      '!date' => format_date($votes_node[1]['timestamp'], 'custom', 'F j, Y'),
+    );
+    $data['display'] = t('You voted this site for "Site of the Day" on !date.', $replacements);
+  }
+  else if ($votes_last[$award_id]['voteable'] === false) {
+    $replacements = array(
+      '!award_name' => $data['award_name'],
+      '!date' => format_date($votes_last[1]['timestamp'], 'custom', 'F j, Y'),
+    );
+    $data['display'] = t('You already cast your "!award_name" today.', $replacements);
+  }
+  else {
+    $data['voteable'] = true;
+    $data['display'] = flag_create_link(_dwa_voting_map_award_id_to_flag_name($award_id), $node->nid);
+  }
+
+  return $data;
+}
+
+
+/**
  * Determine the last time a user has voted on all available types.
- * 
+ *
  * @param $uid
  *   User ID, defaults to current user.
- * 
+ *
  * @return
  *   Array of last votes.
  */
@@ -238,7 +277,7 @@ function dwa_voting_get_last_user_votes($uid) {
   if (!isset($uid)) {
     $uid = $GLOBALS['user']->uid;
   }
-    
+
   $votes = array();
   $flag_ids = array(DWA_VOTING_FID_SOD, DWA_VOTING_FID_SOW, DWA_VOTING_FID_SOM);
   foreach ($flag_ids as $flag_id) {
@@ -250,7 +289,7 @@ function dwa_voting_get_last_user_votes($uid) {
     $query->orderBy('timestamp', 'DESC');
     $result = $query->execute();
     $record = $result->fetchObject();
-    $award_id = _dwa_voting_map_flag_award($flag_id);    
+    $award_id = _dwa_voting_map_flag_id_to_award_id($flag_id);
     if (is_object($record)) {
       $votes[$award_id] = array(
         'award_id' => $award_id,
@@ -262,7 +301,7 @@ function dwa_voting_get_last_user_votes($uid) {
       $votes[$award_id] = array();
     }
   }
- 
+
   // Every user has 1 vote per award type per day.
   // Add additional information for each vote.
   // 1. Boolean Indicator if user can vote for this award
@@ -282,7 +321,7 @@ function dwa_voting_get_last_user_votes($uid) {
       $votes[$id]['voteable'] = false;
     }
   }
-  
+
   return $votes;
 }
 
@@ -303,28 +342,28 @@ function dwa_voting_get_user_site_votes($nid, $uid) {
   if (!isset($nid)) {
     return false;
   }
-  
+
   if (!isset($uid)) {
-    $uid = $GLOBALS['user']->uid;    
+    $uid = $GLOBALS['user']->uid;
   }
-  
+
   $votes = array();
   $query = db_select('flag_content', 'fc');
   $query->fields('fc');
   $query->condition('fc.content_id', $nid);
-  $query->condition('fc.uid', $uid);  
+  $query->condition('fc.uid', $uid);
   $query->condition('fc.fid', array(DWA_VOTING_FID_SOD, DWA_VOTING_FID_SOW, DWA_VOTING_FID_SOM), 'IN');
   $result = $query->execute();
-  
+
   foreach ($result as $record) {
-    $award_id = _dwa_voting_map_flag_award($record->fid);
+    $award_id = _dwa_voting_map_flag_id_to_award_id($record->fid);
     $votes[$award_id] = array(
       'award_id' => $award_id,
       'timestamp' => $record->timestamp,
     );
   }
-  
-  return $votes;  
+
+  return $votes;
 }
 
 
@@ -338,18 +377,43 @@ function dwa_voting_get_user_site_votes($nid, $uid) {
  * @return
  *   Award ID.
  */
-function _dwa_voting_map_flag_award($flag_id) {
+function _dwa_voting_map_flag_id_to_award_id($flag_id) {
   if (!isset($flag_id)) {
     return false;
   }
-  
+
   $award_flag_map = array(
     DWA_VOTING_FID_SOD => DWA_VOTING_AWARD_ID_SOD,
     DWA_VOTING_FID_SOW => DWA_VOTING_AWARD_ID_SOW,
-    DWA_VOTING_FID_SOM => DWA_VOTING_AWARD_ID_SOM,            
+    DWA_VOTING_FID_SOM => DWA_VOTING_AWARD_ID_SOM,
   );
 
   return $award_flag_map[$flag_id];
+}
+
+
+
+/**
+ * Helper function to map award ids to flag ids.
+ *
+ * @param $award_id
+ *   Award ID.
+ *
+ * @return
+ *   Flag ID.
+ */
+function _dwa_voting_map_award_id_to_flag_name($award_id) {
+  if (!isset($award_id)) {
+    return false;
+  }
+
+  $map = array(
+    DWA_VOTING_AWARD_ID_SOD => DWA_VOTING_FLAG_NAME_SOD,
+    DWA_VOTING_AWARD_ID_SOW => DWA_VOTING_FLAG_NAME_SOW,
+    DWA_VOTING_AWARD_ID_SOM => DWA_VOTING_FLAG_NAME_SOM,
+  );
+
+  return $map[$award_id];
 }
 
 
@@ -361,13 +425,13 @@ function _dwa_voting_award_name($award_id) {
   if (!isset($award_id)) {
     return false;
   }
-  
+
   switch ($award_id) {
      case 1:  $award_name = DWA_VOTING_AWARD_NAME_SOD; break;
      case 2:  $award_name = DWA_VOTING_AWARD_NAME_SOW; break;
      case 3:  $award_name = DWA_VOTING_AWARD_NAME_SOM; break;
      default: $award_name = "Award";
   }
-  
+
   return $award_name;
 }
