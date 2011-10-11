@@ -196,6 +196,51 @@ function dwa_voting_block_content($node) {
 
 
 
+function dwa_voting_init() {
+dpm('test2');
+
+  // Calculate sod once per day.
+  // All sites without awards are eligible for the sod award.
+  
+  // Determine if an update needs to happen on this cron run.
+  // Check if the calculation for sod already happened today.
+  $calculate_sod = FALSE;
+  $last_run_day = variable_get('dwa_voting_last_sod', '');
+  $current_day = date('z');
+  if ($last_run_day != $current_day) {
+    $calculate_sod = true;
+  }
+  
+  // Calculate the sod, based on the eligible sites of the previous day.
+  if ($calculate_sod == true) {
+    $timestamp_start = strtotime("yesterday"); // Midnight of yesterday.
+    $timestamp_end = strtotime("midnight"); // Midnight of today.
+    
+    // Get all votes for sites that haven't already received any awards
+    // (either sod, sow or som).
+    $query = db_select('flag_content', 'fc');
+    $query->fields('fc');
+    $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
+    $subquery_sod->addField('sod', 'entity_id');
+    $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
+    $subquery_sow->addField('sow', 'entity_id');
+    $subquery_som = db_select('field_data_field_site_award_month', 'som');
+    $subquery_som->addField('som', 'entity_id');        
+    $query->condition('fc.fid', DWA_VOTING_FID_SOD);
+    $query->condition('fc.content_id', $subquery_sod, 'NOT IN');
+    $query->condition('fc.content_id', $subquery_sow, 'NOT IN');
+    $query->condition('fc.content_id', $subquery_som, 'NOT IN');        
+    $result = $query->execute();
+    foreach ($result as $record) {
+      dpm($record);
+    }
+    
+    // Mark the previous day as completed.
+    // variable_set('dwa_voting_last_sod', date('z'));
+  }
+
+}
+
 /**
  * Generate array of data related to voting links.
  */
