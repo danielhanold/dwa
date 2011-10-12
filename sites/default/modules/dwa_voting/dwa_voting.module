@@ -197,8 +197,6 @@ function dwa_voting_block_content($node) {
 
 
 function dwa_voting_init() {
-dpm('test2');
-
   // Calculate sod once per day.
   // All sites without awards are eligible for the sod award.
   
@@ -231,10 +229,37 @@ dpm('test2');
     $query->condition('fc.content_id', $subquery_sow, 'NOT IN');
     $query->condition('fc.content_id', $subquery_som, 'NOT IN');        
     $result = $query->execute();
+    
+    // Process all results and find out the site with the most votes.
+    $votes = array();    
     foreach ($result as $record) {
-      dpm($record);
+      // If there is no entry for this site, create a new
+      // entry in the array with the nid as the key and 1 
+      // vote as the value. Otherwise, count up by 1.
+      if (isset($votes[$record->content_id])) {
+        $votes[$record->content_id]++;
+      }
+      else {
+        $votes[$record->content_id] = 1;
+      }
     }
     
+    // Determine the highest value in the array.
+    $votes_max = max($votes);
+    // Find all sites with this amount of votes.
+    $winners = array_keys($votes, $votes_max);
+    // Find out if there are multiple sites with the same highest amount.
+    if (count($winners) > 1) {
+      // Use a tie-breaker logic.
+      $random_key = array_rand($winners);
+      $nid_winner = $winners[$random_key];
+    }
+    else {
+      // There is only one winner.
+      $nid_winner = $winners[0];
+    }
+    
+    dpm($nid_winner);
     // Mark the previous day as completed.
     // variable_set('dwa_voting_last_sod', date('z'));
   }
