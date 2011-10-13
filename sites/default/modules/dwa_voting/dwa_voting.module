@@ -235,6 +235,23 @@ function dwa_voting_process_sites($award_id) {
   if ($process_sites == true) {
     $nid_winner = dwa_voting_determine_winner_site($award_id);
     dpm($nid_winner);
+
+    // Mark a node as a winner.    
+    // Load the winner site node.
+    $node = node_load($nid_winner);
+    
+    // Update the correct field for this site.
+    switch ($award_id) {
+      case 1: 
+        $field_name = 'field_site_award_day';
+        $timestamp = strtotime('today');
+        break;
+      case 2: $field_name = 'field_site_award_week'; break;
+      case 3: $field_name = 'field_site_award_month'; break;            
+    }
+    $node->{$field_name}['und'][0]['value'] = $timestamp;
+    $node = node_submit($node);
+    node_save($node);
     
     // Mark this run as completed.
     // variable_set($var_name, $current_date);
