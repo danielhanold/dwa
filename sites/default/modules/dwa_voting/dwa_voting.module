@@ -197,74 +197,136 @@ function dwa_voting_block_content($node) {
 
 
 function dwa_voting_init() {
-  // Calculate sod once per day.
-  // All sites without awards are eligible for the sod award.
-  
-  // Determine if an update needs to happen on this cron run.
-  // Check if the calculation for sod already happened today.
-  $calculate_sod = FALSE;
-  $last_run_day = variable_get('dwa_voting_last_sod', '');
-  $current_day = date('z');
-  if ($last_run_day != $current_day) {
-    $calculate_sod = true;
+  dwa_voting_process_sites(DWA_VOTING_AWARD_ID_SOD);
+}
+
+
+
+/**
+ * Select winners for various categories.
+ *
+ * @param $award_id
+ *   Award ID for which category results should be calculated.
+ */
+function dwa_voting_process_sites($award_id) {
+  if (!isset($award_id)) {
+    return;
   }
   
+  // Determine if an update needs to happen for this award id
+  // on this cron run.
+  $process_sites = false;
+  switch ($award_id) {
+    // Site of the Day.
+    // Calculate sod once per day.
+    case 1:
+      $var_name = 'dwa_voting_last_sod';
+      $var_date = 'z';
+      break;
+  }
+  $last_run_date = variable_get($var_name, '');
+  $current_date = date($var_date);  
+  if ($last_run_date != $current_date) {
+    $process_sites = true;
+  }
+  
+
   // Calculate the sod, based on the eligible sites of the previous day.
-  if ($calculate_sod == true) {
-    $timestamp_start = strtotime("yesterday"); // Midnight of yesterday.
-    $timestamp_end = strtotime("midnight"); // Midnight of today.
-    
-    // Get all votes for sites that haven't already received any awards
-    // (either sod, sow or som).
-    $query = db_select('flag_content', 'fc');
-    $query->fields('fc');
-    $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
-    $subquery_sod->addField('sod', 'entity_id');
-    $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
-    $subquery_sow->addField('sow', 'entity_id');
-    $subquery_som = db_select('field_data_field_site_award_month', 'som');
-    $subquery_som->addField('som', 'entity_id');        
-    $query->condition('fc.fid', DWA_VOTING_FID_SOD);
-    $query->condition('fc.content_id', $subquery_sod, 'NOT IN');
-    $query->condition('fc.content_id', $subquery_sow, 'NOT IN');
-    $query->condition('fc.content_id', $subquery_som, 'NOT IN');        
-    $result = $query->execute();
-    
-    // Process all results and find out the site with the most votes.
-    $votes = array();    
-    foreach ($result as $record) {
-      // If there is no entry for this site, create a new
-      // entry in the array with the nid as the key and 1 
-      // vote as the value. Otherwise, count up by 1.
-      if (isset($votes[$record->content_id])) {
-        $votes[$record->content_id]++;
-      }
-      else {
-        $votes[$record->content_id] = 1;
-      }
-    }
-    
-    // Determine the highest value in the array.
-    $votes_max = max($votes);
-    // Find all sites with this amount of votes.
-    $winners = array_keys($votes, $votes_max);
-    // Find out if there are multiple sites with the same highest amount.
-    if (count($winners) > 1) {
-      // Use a tie-breaker logic.
-      $random_key = array_rand($winners);
-      $nid_winner = $winners[$random_key];
-    }
-    else {
-      // There is only one winner.
-      $nid_winner = $winners[0];
-    }
-    
+  if ($process_sites == true) {
+    $nid_winner = dwa_voting_determine_winner_site($award_id);
     dpm($nid_winner);
-    // Mark the previous day as completed.
-    // variable_set('dwa_voting_last_sod', date('z'));
+    
+    // Mark this run as completed.
+    // variable_set($var_name, $current_date);
+  }
+}
+
+
+
+/**
+ * Determine the winner of a batch of votes.
+ *
+ * @param $award_id
+ *   Array ID.
+ * 
+ * @return
+ *   Winner nid.
+ */
+function dwa_voting_determine_winner_site($award_id) {
+  // Get eligible votes for this award id.
+  $votes = dwa_voting_get_votes($award_id);
+
+  // Determine the highest value in the array.
+  $votes_max = max($votes);
+  // Find all sites with this amount of votes.
+  $winners = array_keys($votes, $votes_max);
+  // Find out if there are multiple sites with the same highest amount.
+  if (count($winners) > 1) {
+    // Use a tie-breaker logic.
+    $random_key = array_rand($winners);
+    $nid_winner = $winners[$random_key];
+  }
+  else {
+    // There is only one winner.
+    $nid_winner = $winners[0];
+  }
+  return $nid_winner;
+}
+
+
+
+/**
+ * Get all eligible sites for an award category from the database.
+ *
+ * @param @award_id
+ *   Award Id.
+ * @return
+ *   Array of votes (key = nid, value = # of votes).
+ */
+function dwa_voting_get_votes($award_id) {
+  if (!isset($award_id)) {
+    return false;
   }
 
+  switch ($award_id) {
+    // Site of the Day.
+    // Get all votes for sites that haven't already received any awards
+    // (either sod, sow or som).    
+    case 1:
+      $query = db_select('flag_content', 'fc');
+      $query->fields('fc');
+      $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
+      $subquery_sod->addField('sod', 'entity_id');
+      $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
+      $subquery_sow->addField('sow', 'entity_id');
+      $subquery_som = db_select('field_data_field_site_award_month', 'som');
+      $subquery_som->addField('som', 'entity_id');        
+      $query->condition('fc.fid', _dwa_voting_map_award_id_to_flag_id($award_id));
+      $query->condition('fc.content_id', $subquery_sod, 'NOT IN');
+      $query->condition('fc.content_id', $subquery_sow, 'NOT IN');
+      $query->condition('fc.content_id', $subquery_som, 'NOT IN');
+      break;
+  }  
+  $result = $query->execute();
+  
+  // Process all results and find out the site with the most votes.
+  $votes = array();    
+  foreach ($result as $record) {
+    // If there is no entry for this site, create a new
+    // entry in the array with the nid as the key and 1 
+    // vote as the value. Otherwise, count up by 1.
+    if (isset($votes[$record->content_id])) {
+      $votes[$record->content_id]++;
+    }
+    else {
+      $votes[$record->content_id] = 1;
+    }
+  }  
+  
+  return $votes;
 }
+
+
 
 /**
  * Generate array of data related to voting links.
@@ -464,7 +526,7 @@ function _dwa_voting_map_flag_id_to_award_id($flag_id) {
 
 
 /**
- * Helper function to map award ids to flag ids.
+ * Helper function to map award ids to flag names.
  *
  * @param $award_id
  *   Award ID.
@@ -481,6 +543,31 @@ function _dwa_voting_map_award_id_to_flag_name($award_id) {
     DWA_VOTING_AWARD_ID_SOD => DWA_VOTING_FLAG_NAME_SOD,
     DWA_VOTING_AWARD_ID_SOW => DWA_VOTING_FLAG_NAME_SOW,
     DWA_VOTING_AWARD_ID_SOM => DWA_VOTING_FLAG_NAME_SOM,
+  );
+
+  return $map[$award_id];
+}
+
+
+
+/**
+ * Helper function to map award ids to flag ids.
+ *
+ * @param $award_id
+ *   Award ID.
+ *
+ * @return
+ *   Flag ID.
+ */
+function _dwa_voting_map_award_id_to_flag_id($award_id) {
+  if (!isset($award_id)) {
+    return false;
+  }
+
+  $map = array(
+    DWA_VOTING_AWARD_ID_SOD => DWA_VOTING_FID_SOD,
+    DWA_VOTING_AWARD_ID_SOW => DWA_VOTING_FID_SOW,
+    DWA_VOTING_AWARD_ID_SOM => DWA_VOTING_FID_SOM,
   );
 
   return $map[$award_id];
