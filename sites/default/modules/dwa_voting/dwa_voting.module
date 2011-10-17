@@ -212,7 +212,7 @@ function dwa_voting_process_sites($award_id) {
   if (!isset($award_id)) {
     return;
   }
-  
+
   // Determine if an update needs to happen for this award id
   // on this cron run.
   $process_sites = false;
@@ -225,34 +225,39 @@ function dwa_voting_process_sites($award_id) {
       break;
   }
   $last_run_date = variable_get($var_name, '');
-  $current_date = date($var_date);  
+  $current_date = date($var_date);
   if ($last_run_date != $current_date) {
     $process_sites = true;
   }
-  
+
 
   // Calculate the sod, based on the eligible sites of the previous day.
   if ($process_sites == true) {
     $nid_winner = dwa_voting_determine_winner_site($award_id);
-    dpm($nid_winner);
 
-    // Mark a node as a winner.    
-    // Load the winner site node.
-    $node = node_load($nid_winner);
-    
-    // Update the correct field for this site.
-    switch ($award_id) {
-      case 1: 
-        $field_name = 'field_site_award_day';
-        $timestamp = strtotime('today');
-        break;
-      case 2: $field_name = 'field_site_award_week'; break;
-      case 3: $field_name = 'field_site_award_month'; break;            
+    // Mark this node as a winner.
+    if ($nid_winner) {
+      dpm('test');
+      dpm($nid_winner);
+
+      // Mark a node as a winner.
+      // Load the winner site node.
+      $node = node_load($nid_winner);
+
+      // Update the correct field for this site.
+      switch ($award_id) {
+        case 1:
+          $field_name = 'field_site_award_day';
+          $timestamp = strtotime('today');
+          break;
+        case 2: $field_name = 'field_site_award_week'; break;
+        case 3: $field_name = 'field_site_award_month'; break;
+      }
+      $node->{$field_name}['und'][0]['value'] = $timestamp;
+      $node = node_submit($node);
+      //node_save($node);
     }
-    $node->{$field_name}['und'][0]['value'] = $timestamp;
-    $node = node_submit($node);
-    node_save($node);
-    
+
     // Mark this run as completed.
     // variable_set($var_name, $current_date);
   }
@@ -265,7 +270,7 @@ function dwa_voting_process_sites($award_id) {
  *
  * @param $award_id
  *   Array ID.
- * 
+ *
  * @return
  *   Winner nid.
  */
@@ -273,21 +278,38 @@ function dwa_voting_determine_winner_site($award_id) {
   // Get eligible votes for this award id.
   $votes = dwa_voting_get_votes($award_id);
 
-  // Determine the highest value in the array.
-  $votes_max = max($votes);
-  // Find all sites with this amount of votes.
-  $winners = array_keys($votes, $votes_max);
-  // Find out if there are multiple sites with the same highest amount.
-  if (count($winners) > 1) {
-    // Use a tie-breaker logic.
-    $random_key = array_rand($winners);
-    $nid_winner = $winners[$random_key];
+  // If there are votes for sites in this award category,
+  // determine the winner.
+  if (!empty($votes)) {
+    // Determine the highest value in the array.
+    $votes_max = max($votes);
+    // Find all sites with this amount of votes.
+    $winners = array_keys($votes, $votes_max);
+    // Find out if there are multiple sites with the same highest amount.
+    if (count($winners) > 1) {
+      // Use a tie-breaker logic.
+      $random_key = array_rand($winners);
+      $nid_winner = $winners[$random_key];
+    }
+    else {
+      // There is only one winner.
+      $nid_winner = $winners[0];
+    }
+  }
+  // If there are no votes for this award category,
+  // pick a random site from all sites that have not
+  // been voted on yet.
+  else {
+    $nid_winner = _dwa_voting_prepare_query_sites_all($award_id);
+  }
+
+  // Return the nid of the winner or false if no winner could be found.
+  if (empty($nid_winner)) {
+    return false;
   }
   else {
-    // There is only one winner.
-    $nid_winner = $winners[0];
+    return $nid_winner;
   }
-  return $nid_winner;
 }
 
 
@@ -308,29 +330,18 @@ function dwa_voting_get_votes($award_id) {
   switch ($award_id) {
     // Site of the Day.
     // Get all votes for sites that haven't already received any awards
-    // (either sod, sow or som).    
+    // (either sod, sow or som).
     case 1:
-      $query = db_select('flag_content', 'fc');
-      $query->fields('fc');
-      $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
-      $subquery_sod->addField('sod', 'entity_id');
-      $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
-      $subquery_sow->addField('sow', 'entity_id');
-      $subquery_som = db_select('field_data_field_site_award_month', 'som');
-      $subquery_som->addField('som', 'entity_id');        
-      $query->condition('fc.fid', _dwa_voting_map_award_id_to_flag_id($award_id));
-      $query->condition('fc.content_id', $subquery_sod, 'NOT IN');
-      $query->condition('fc.content_id', $subquery_sow, 'NOT IN');
-      $query->condition('fc.content_id', $subquery_som, 'NOT IN');
+      $query = _dwa_voting_prepare_query_sites_votes($award_id);
       break;
-  }  
+  }
   $result = $query->execute();
-  
+
   // Process all results and find out the site with the most votes.
-  $votes = array();    
+  $votes = array();
   foreach ($result as $record) {
     // If there is no entry for this site, create a new
-    // entry in the array with the nid as the key and 1 
+    // entry in the array with the nid as the key and 1
     // vote as the value. Otherwise, count up by 1.
     if (isset($votes[$record->content_id])) {
       $votes[$record->content_id]++;
@@ -338,8 +349,8 @@ function dwa_voting_get_votes($award_id) {
     else {
       $votes[$record->content_id] = 1;
     }
-  }  
-  
+  }
+
   return $votes;
 }
 
@@ -383,14 +394,14 @@ function dwa_voting_generate_link($award_id, $node) {
     case 2: $field_name = 'field_site_award_week'; break;
     case 3: $field_name = 'field_site_award_month'; break;
   }
-  if (isset($node->{$field_name}['und']['0']['value'])) {
+  if (!empty($node->{$field_name}['und']['0']['value'])) {
     $replacements = array(
       '!award_name' => $data['award_name'],
       '!date' => format_date($node->{$field_name}['und']['0']['value'], 'custom', 'F j, Y'),
     );
     $data['display'] = t('This site has already been voted "!award_name" on !date.', $replacements);
   }
-  else if (isset($votes_node[$award_id])) {
+  else if (!empty($votes_node[$award_id])) {
     $replacements = array(
       '!award_name' => $data['award_name'],
       '!date' => format_date($votes_node[1]['timestamp'], 'custom', 'F j, Y'),
@@ -608,4 +619,69 @@ function _dwa_voting_award_name($award_id) {
   }
 
   return $award_name;
+}
+
+
+
+/**
+ * Query to determine eligible site for an award category.
+ *
+ * @param $award_id
+ *   Award Id
+ *
+ * @return
+ *   Query results.
+ */
+function _dwa_voting_prepare_query_sites_votes($award_id) {
+  switch ($award_id) {
+    case 1:
+      $query = db_select('flag_content', 'fc');
+      $query->fields('fc');
+      $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
+      $subquery_sod->addField('sod', 'entity_id');
+      $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
+      $subquery_sow->addField('sow', 'entity_id');
+      $subquery_som = db_select('field_data_field_site_award_month', 'som');
+      $subquery_som->addField('som', 'entity_id');
+      $query->condition('fc.fid', _dwa_voting_map_award_id_to_flag_id($award_id));
+      $query->condition('fc.content_id', $subquery_sod, 'NOT IN');
+      $query->condition('fc.content_id', $subquery_sow, 'NOT IN');
+      $query->condition('fc.content_id', $subquery_som, 'NOT IN');
+      break;
+  }
+  return $query;
+}
+
+
+
+/**
+ * Query to determine a random site for an award category.
+ *
+ * @param $award_id
+ *   Award Id
+ *
+ * @return
+ *   Query results.
+ */
+function _dwa_voting_prepare_query_sites_all($award_id) {
+  switch ($award_id) {
+    case 1:
+      $query = db_select('node', 'n');
+      $query->fields('n', array('nid'));
+      $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
+      $subquery_sod->addField('sod', 'entity_id');
+      $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
+      $subquery_sow->addField('sow', 'entity_id');
+      $subquery_som = db_select('field_data_field_site_award_month', 'som');
+      $subquery_som->addField('som', 'entity_id');
+      $query->condition('n.type', 'site');
+      $query->condition('n.nid', $subquery_sod, 'NOT IN');
+      $query->condition('n.nid', $subquery_sow, 'NOT IN');
+      $query->condition('n.nid', $subquery_som, 'NOT IN');
+      $query->orderRandom();
+      $query->range(0,1);
+      break;
+  }
+  $result = $query->execute();
+  return $result->fetchField();
 }
