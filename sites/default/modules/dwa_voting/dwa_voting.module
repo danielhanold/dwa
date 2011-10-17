@@ -198,6 +198,7 @@ function dwa_voting_block_content($node) {
 
 function dwa_voting_init() {
   dwa_voting_process_sites(DWA_VOTING_AWARD_ID_SOD);
+  watchdog('dwa_voting', 'All site Winners determined for !date', array('!date' => date('l, j M Y')));
 }
 
 
@@ -237,9 +238,6 @@ function dwa_voting_process_sites($award_id) {
 
     // Mark this node as a winner.
     if ($nid_winner) {
-      dpm('test');
-      dpm($nid_winner);
-
       // Mark a node as a winner.
       // Load the winner site node.
       $node = node_load($nid_winner);
@@ -260,6 +258,11 @@ function dwa_voting_process_sites($award_id) {
 
     // Mark this run as completed.
     // variable_set($var_name, $current_date);
+    $replacements = array(
+      '!date' => date('l, j M Y'),
+      '!site_title' => $node->title,
+    );
+    watchdog('dwa_voting', 'Site of the Day (!site_title) set on !date', $replacements, WATCHDOG_NOTICE, l('View Site', 'node/' . $node->nid));
   }
 }
 
@@ -295,16 +298,27 @@ function dwa_voting_determine_winner_site($award_id) {
       // There is only one winner.
       $nid_winner = $winners[0];
     }
+    $replacements = array(
+      '!award_category' => _dwa_voting_award_name($award_id),
+      '!nid' => $nid_winner,
+    );
+    watchdog('dwa_voting', 'Determine !award_category based on user votes (nid = !nid)', $replacements);
   }
   // If there are no votes for this award category,
   // pick a random site from all sites that have not
   // been voted on yet.
   else {
     $nid_winner = _dwa_voting_prepare_query_sites_all($award_id);
+    $replacements = array(
+      '!award_category' => _dwa_voting_award_name($award_id),
+      '!nid' => $nid_winner,
+    );
+    watchdog('dwa_voting', 'Determine !award_categorybased on random selection (nid = !nid)', $replacements);
   }
 
   // Return the nid of the winner or false if no winner could be found.
   if (empty($nid_winner)) {
+    watchdog('dwa_voting', 'Failed attempt to determine !award_category, no votes or sites remaining.', array('!award_category' => _dwa_voting_award_name($award_id)));
     return false;
   }
   else {
