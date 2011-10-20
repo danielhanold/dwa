@@ -31,28 +31,9 @@ Drupal.fieldUIFieldOverview.group.prototype = {
   getRegion: function () {
     return 'main';
   },
-  
   regionChange: function (region, recurse) {
     return {};
-  },
-
-  regionChangeFields: function (region, element, refreshRows) {
-
-    // Create a new tabledrag rowObject, that will compute the group's child
-    // rows for us.
-    var tableDrag = element.tableDrag;
-    rowObject = new tableDrag.row(element.row, 'mouse', true);
-    // Skip the main row, we handled it above.
-    rowObject.group.shift();
-
-    // Let child rows handlers deal with the region change - without recursing
-    // on nested group rows, we are handling them all here.
-    $.each(rowObject.group, function() {
-      var childRow = this;
-      var childRowHandler = $(childRow).data('fieldUIRowHandler');
-      $.extend(refreshRows, childRowHandler.regionChange(region, false));
-    });
-  }  
+  }
 };
   
   
@@ -80,7 +61,6 @@ Drupal.fieldUIDisplayOverview.group.prototype = {
   },
 
   regionChange: function (region, recurse) {
-
     // Default recurse to true.
     recurse = (recurse == undefined) || recurse;
 
@@ -107,31 +87,24 @@ Drupal.fieldUIDisplayOverview.group.prototype = {
     refreshRows[this.name] = this.$formatSelect.get(0);
 
     if (recurse) {
-      this.regionChangeFields(region, this, refreshRows);
+      // Create a new tabledrag rowObject, that will compute the group's child
+      // rows for us.
+      var tableDrag = this.tableDrag;
+      rowObject = new tableDrag.row(this.row, 'mouse', true);
+      // Skip the main row, we handled it above.
+      rowObject.group.shift();
+
+      // Let child rows handlers deal with the region change - without recursing
+      // on nested group rows, we are handling them all here.
+      $.each(rowObject.group, function() {
+        var childRow = this;
+        var childRowHandler = $(childRow).data('fieldUIRowHandler');
+        $.extend(refreshRows, childRowHandler.regionChange(region, false));
+      });
     }
 
     return refreshRows;
   },
-
-  regionChangeFields: function (region, element, refreshRows) {
-
-    // Create a new tabledrag rowObject, that will compute the group's child
-    // rows for us.
-    var tableDrag = element.tableDrag;
-    rowObject = new tableDrag.row(element.row, 'mouse', true);
-    // Skip the main row, we handled it above.
-    rowObject.group.shift();
-
-    // Let child rows handlers deal with the region change - without recursing
-    // on nested group rows, we are handling them all here.
-    $.each(rowObject.group, function() {
-      var childRow = this;
-      var childRowHandler = $(childRow).data('fieldUIRowHandler');
-      $.extend(refreshRows, childRowHandler.regionChange(region, false));
-    });
-    
-  }
-  
 };
 
 })(jQuery);

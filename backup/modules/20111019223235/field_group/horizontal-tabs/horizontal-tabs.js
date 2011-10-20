@@ -1,3 +1,4 @@
+
 (function ($) {
 
 /**
@@ -28,12 +29,11 @@ Drupal.behaviors.horizontalTabs = {
       $(this).wrap('<div class="horizontal-tabs clearfix"></div>').before(tab_list);
 
       // Transform each fieldset into a tab.
-      $fieldsets.each(function (i) {
+      $fieldsets.each(function () {
         var horizontal_tab = new Drupal.horizontalTab({
           title: $('> legend', this).text(),
           fieldset: $(this)
         });
-        horizontal_tab.item.addClass('horizontal-tab-button-' + i);
         tab_list.append(horizontal_tab.item);
         $(this)
           .removeClass('collapsible collapsed')
@@ -115,14 +115,14 @@ Drupal.horizontalTab.prototype = {
    */
   focus: function () {
     this.fieldset
-      .removeClass('horizontal-tab-hidden')
       .siblings('fieldset.horizontal-tabs-pane')
         .each(function () {
           var tab = $(this).data('horizontalTab');
-          tab.fieldset.addClass('horizontal-tab-hidden');
+          tab.fieldset.hide();
           tab.item.removeClass('selected');
         })
         .end()
+      .show()
       .siblings(':hidden.horizontal-tabs-active-tab')
         .val(this.fieldset.attr('id'));
     this.item.addClass('selected');
@@ -143,14 +143,14 @@ Drupal.horizontalTab.prototype = {
    */
   tabShow: function () {
     // Display the tab.
-    this.item.removeClass('horizontal-tab-hidden');
+    this.item.show();
     // Update .first marker for items. We need recurse from parent to retain the
     // actual DOM element order as jQuery implements sortOrder, but not as public
     // method.
     this.item.parent().children('.horizontal-tab-button').removeClass('first')
       .filter(':visible:first').addClass('first');
     // Display the fieldset.
-    this.fieldset.removeClass('horizontal-tab-hidden');
+    this.fieldset.removeClass('horizontal-tab-hidden').show();
     // Focus this tab.
     this.focus();
     return this;
@@ -161,14 +161,14 @@ Drupal.horizontalTab.prototype = {
    */
   tabHide: function () {
     // Hide this tab.
-    this.item.addClass('horizontal-tab-hidden');
+    this.item.hide();
     // Update .first marker for items. We need recurse from parent to retain the
     // actual DOM element order as jQuery implements sortOrder, but not as public
     // method.
     this.item.parent().children('.horizontal-tab-button').removeClass('first')
       .filter(':visible:first').addClass('first');
     // Hide the fieldset.
-    this.fieldset.addClass('horizontal-tab-hidden');
+    this.fieldset.addClass('horizontal-tab-hidden').hide();
     // Focus the first visible tab (if there is one).
     var $firstTab = this.fieldset.siblings('.horizontal-tabs-pane:not(.horizontal-tab-hidden):first');
     if ($firstTab.length) {
