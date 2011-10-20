@@ -196,7 +196,7 @@ function dwa_voting_block_content($node) {
 
 
 
-function dwa_voting_init() {
+function dwa_voting_init2() {
   dwa_voting_process_sites(DWA_VOTING_AWARD_ID_SOD);
   dwa_voting_process_sites(DWA_VOTING_AWARD_ID_SOW);
   dwa_voting_process_sites(DWA_VOTING_AWARD_ID_SOM);
@@ -670,7 +670,7 @@ function _dwa_voting_prepare_query_sites_votes($award_id) {
     // (either sod, sow or som).
     case 1:
       $query = db_select('flag_content', 'fc');
-      $query->addField('n', 'content_id', 'nid');
+      $query->addField('fc', 'content_id', 'nid');
       $subquery_sod = db_select('field_data_field_site_award_day', 'sod');
       $subquery_sod->addField('sod', 'entity_id');
       $subquery_sow = db_select('field_data_field_site_award_week', 'sow');
