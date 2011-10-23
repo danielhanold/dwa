@@ -55,7 +55,7 @@ function dwa_api_image_default_styles() {
       array(
         'name' => 'image_scale', 
         'data' => array(
-          'width' => 680,
+          'width' => 900,
           'height' => null,
           'upscale' => 0,
         ),
@@ -64,8 +64,8 @@ function dwa_api_image_default_styles() {
       array(
         'name' => 'image_crop', 
         'data' => array(
-          'width' => 680,
-          'height' => 435,
+          'width' => 900,
+          'height' => 575,
           'anchor' => 'left-top',
         ),
         'weight' => 2,
