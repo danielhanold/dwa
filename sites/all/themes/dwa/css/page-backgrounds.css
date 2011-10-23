@@ -11,15 +11,18 @@
 
 
 body {
+background-color: #100c0b;
 }
 
 #page-wrapper {
+background-color: #f1f1f1;
 }
 
 #page {
 }
 
 #header {
+background: url("../images/header-bg.png") repeat-x scroll 0 0 #242320;
 }
 
 #header .section {
@@ -29,7 +32,17 @@ body {
 }
 
 #main {
+background: url("../images/main-bg.png") repeat-y scroll 0 0 #100c0b;
 }
 
-.region-footer {
+.region-footer{
+background: url("../images/region-footer-bg.png") repeat-x scroll 0 0 #151412;
+}
+
+.region-bottom {
+background-color: #1e1d1a;
+}
+
+.region-sidebar-second{
+background-color: #FFFFFF;
 }

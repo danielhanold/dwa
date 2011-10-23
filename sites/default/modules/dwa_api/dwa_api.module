@@ -5,6 +5,45 @@
  * API functionality for DWA.
  */
 
+function dwa_api_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'dwa_api') . '/includes/views',
+  );
+}
+
+
+/**
+ * Implements hook_block_info().
+ */
+function dwa_api_block_info() {
+  $blocks = array();
+  
+  $blocks['copyright'] = array(
+    'info' => t('DWA Copyright'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function dwa_api_block_view($block_name = '') {
+  switch ($block_name) {
+    case 'copyright':
+//      $content = theme('item_list', $theme_args);
+      $content = 'Drupal Website Awards';    
+      $block = array(
+        'content' => $content,
+      );
+      
+      return $block;
+  }
+}
+
+
+
 /**
  * Implements hook_image_default_styles().
  */

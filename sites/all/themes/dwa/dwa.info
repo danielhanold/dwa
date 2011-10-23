@@ -12,7 +12,7 @@
 ; page at admin/appearance.
 
 screenshot  = screenshot.png
-name        = DWA Theme
+name        = DWA
 description = Theme for Drupal Website Awards (Zen Sub-Theme)
 
 

@@ -28,7 +28,6 @@ h2.block-title /* Block title */ {
 
 #block-aggregator-category-1 /* Block for the latest news items in the first category */ {
 }
-
 #block-aggregator-feed-1 /* Block for the latest news items in the first feed */ {
 }
 
@@ -78,6 +77,44 @@ h2.block-title /* Block title */ {
 }
 
 #block-system-main-menu /* "Main menu" block */ {
+float: left;
+margin-bottom: 0;
+}
+
+#block-system-main-menu a{
+text-transform: uppercase;
+}
+
+#block-system-main-menu ul{
+margin-bottom: 0;
+margin-top: 0;
+padding-left: 0;
+}
+
+#block-system-main-menu li{
+float: left;
+list-style: none outside none;
+margin: 0;
+padding: 0;
+}
+
+#block-system-main-menu li a{
+    border-right: 1px solid #827D72;
+    display: block;
+    height: 60px;
+    line-height: 60px;
+    padding-left: 20px;
+    padding-right: 20px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+#block-system-main-menu li.first a{
+border-left: 1px solid #827D72;
+}
+
+#block-system-main-menu li a.active{
+background: url("../images/block-system-main-menu-bg.png") repeat-x scroll 0 0 #003359;
 }
 
 #block-system-management /* "Management" block for Drupal management menu */ {
@@ -105,4 +142,49 @@ h2.block-title /* Block title */ {
 }
 
 #block-user-online /* "Who's online" block for a list of the online users */ {
+}
+
+/* DWA Copyright Block */
+#block-dwa-api-copyright { 
+    margin-bottom: 0;
+    width: 100%;
+}
+
+#block-dwa-api-copyright .content{
+    display: table;
+    margin: 0 auto;
+}
+
+/**
+ * Footer Blocks.
+ */
+.region-footer .block{
+    border-right: 1px solid #292927;
+    margin-bottom: 0;
+    padding-bottom: 30px;
+    padding-top: 35px;
+    width: 313px;
+}
+
+.region-footer .block.first{
+width:314px;
+}
+
+.region-footer .block.last{
+/* border-right: none; */
+}
+
+.region-footer .block .content{
+margin-left: 20px;
+margin-right: 20px;
+}
+
+.region-footer h2,
+.region-footer h2.block-title{
+    color: #FFFFFF;
+    font-size: 1.7em;
+    font-weight: normal;
+    margin-bottom: 1.25em;
+    margin-left: 20px;
+    margin-right: 20px;
 }

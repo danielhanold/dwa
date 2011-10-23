@@ -40,6 +40,12 @@ body {
  * Header
  */
 #header {
+border-bottom: 1px solid #454340;
+height: 60px;
+}
+
+#header a {
+color: #FFFFFF;
 }
 
 #header .section {
@@ -52,7 +58,8 @@ body {
 }
 
 #logo img {
-  vertical-align: bottom;
+padding: 15px 20px;
+vertical-align: bottom;
 }
 
 #name-and-slogan /* Wrapper for website name and slogan */ {
@@ -81,7 +88,10 @@ div#site-name /* The name of the website */ {
 }
 
 .region-header /* Wrapper for any blocks placed in the header region */ {
-  clear: both; /* Clear the logo */
+float: right;
+height: 60px;
+line-height: 60px;
+width: 1030px;
 }
 
 /*
@@ -220,10 +230,25 @@ ul.links li {
  * Footer
  */
 .region-footer {
+    background-color: #151412;
+    border-left: 1px solid #37342F;
+    border-right: 1px solid #37342F;
+    color: #cacaca;
+}
+
+.region-footer a{
+color: #cacaca;
 }
 
 /*
  * Page bottom
  */
 .region-bottom /* Wrapper for any blocks placed in the page bottom region */ {
+    border-left: 1px solid #37342F;
+    border-right: 1px solid #37342F;
+    border-top: 1px solid #37342F;
+    color: #CACACA;
+    height: 70px;
+    line-height: 70px;
+    width: 1198px;
 }
