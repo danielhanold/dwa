@@ -11,7 +11,7 @@
  * @ingroup themeable
  */
 
-function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
+function _views_slideshow_cycle_preprocess_views_slideshow_cycle_main_frame(&$vars) {
   $settings = $vars['settings'];
   $rows = $vars['rows'];
   $view = $vars['view'];
@@ -25,7 +25,7 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
         $value = str_replace("\n", ' ', $value);
       }
       $value = trim($value);
-  
+
       if (is_numeric($value)) {
         $value = (int)$value;
       }
@@ -36,7 +36,7 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
         $value = FALSE;
       }
     }
-    
+
     $new_settings[$key] = $value;
   }
 
@@ -66,37 +66,56 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
 
   if ($slideshow_count > 1) {
     $vss_id .= '-' . $slideshow_count;
-    $settings['vss_id'] = $vss_id;  
+    $settings['vss_id'] = $vss_id;
   }
   
+  // Don't load javascript unless libraries module is present.
+  if (module_exists('libraries')) {
+    // Load jQuery Cycle
+    if ($cycle_path = _views_slideshow_cycle_library_path()) {
+      drupal_add_js($cycle_path);
+    }
+
+    // Load Json2
+    $json_path = libraries_get_path('json2');
+    if (!empty($json_path) && file_exists($json_path . '/json2.js')) {
+      drupal_add_js($json_path . '/json2.js');
+    }
+
+    // Load our cycle js
+    $module_path = drupal_get_path('module', 'views_slideshow_cycle');
+    drupal_add_js($module_path . '/js/views_slideshow_cycle.js');
+  }
+
+  // Load our cycle css
+  drupal_add_css($module_path . '/views_slideshow_cycle.css', 'file');
+
   drupal_add_js(array('viewsSlideshowCycle' => array('#views_slideshow_cycle_main_' . $vss_id => $settings)), 'setting');
   
-  // Add the hoverIntent plugin.
-  if (isset($settings['advanced_pagerevent']) && $settings['advanced_pagerevent'] == 'hoverIntent') {
-    if (module_exists('jq')) {
-      $loaded_plugins = jq_plugins();
-      if (!empty($loaded_plugins['hoverIntent'])) {
-        jq_add('hoverIntent');
+  // Add hover intent library
+  if ($settings['pause']) {
+    if (module_exists('libraries')) {
+      // Load jQuery hoverIntent
+      $hoverIntent_path = libraries_get_path('jquery.hoverIntent');
+      if (!empty($hoverIntent_path) && file_exists($hoverIntent_path . '/jquery.hoverIntent.js')) {
+        drupal_add_js($hoverIntent_path . '/jquery.hoverIntent.js');
       }
     }
-    if (module_exists('hoverintent')) {
-      hoverintent_add();
-    }
   }
-  
+
   // Add the slideshow elements.
   $vars['classes_array'][] = 'views_slideshow_cycle_teaser_section';
-  
+
   $styles = '';
   if (isset($view->display_handler->display->display_options['style_options']['views_slideshow_cycle'])) {
     $styles = $view->display_handler->display->display_options['style_options']['views_slideshow_cycle'];
   }
-  
+
   $styles_default = '';
   if (isset($view->display['default']->display_options['style_options']['views_slideshow_cycle'])) {
     $styles_default = $view->display['default']->display_options['style_options']['views_slideshow_cycle'];
   }
-  
+
   // Retrive the number of items per frame
   if (isset($styles['items_per_slide']) && $styles['items_per_slide'] > 0) {
     $items_per_slide = $styles['items_per_slide'];
@@ -107,21 +126,21 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
   else {
     $items_per_slide = 1;
   }
-  
+
   $vars['items_per_slide'] = $items_per_slide;
-  
+
   $items = array();
   $slideshow_count = 0;
   $rendered_rows = '';
   foreach ($rows as $count => $item) {
     $items[] = $item;
     if (count($items) == $items_per_slide || $count == (count($rows)-1)) {
-      $rendered_rows .= theme('views_slideshow_cycle_main_frame_row', array('vss_id' => $vss_id, 'items' => $items, 'count' => $slideshow_count));
+      $rendered_rows .= theme('views_slideshow_cycle_main_frame_row', array('vss_id' => $vss_id, 'items' => $items, 'count' => $slideshow_count, 'view' => $vars['view']));
       $items = array();
       $slideshow_count++;
     }
   }
-  
+
   $vars['rendered_rows'] = $rendered_rows;
 }
 
@@ -130,7 +149,7 @@ function template_preprocess_views_slideshow_cycle_main_frame(&$vars) {
  *
  * @ingroup themeable
  */
-function template_preprocess_views_slideshow_cycle_main_frame_row(&$vars) {
+function _views_slideshow_cycle_preprocess_views_slideshow_cycle_main_frame_row(&$vars) {
   $current = $vars['count'] + 1;
   $vars['classes_array'][] = 'views_slideshow_cycle_slide';
   $vars['classes_array'][] = 'views_slideshow_slide views-row-' . $current;
@@ -142,11 +161,11 @@ function template_preprocess_views_slideshow_cycle_main_frame_row(&$vars) {
 
   $vars['rendered_items'] = '';
   foreach ($vars['items'] as $item_count => $item) {
-    $vars['rendered_items'] .= theme('views_slideshow_cycle_main_frame_row_item', array('item' => $item, 'item_count' => $item_count));
+    $vars['rendered_items'] .= theme('views_slideshow_cycle_main_frame_row_item', array('item' => $item, 'item_count' => $item_count, 'view' => $vars['view']));
   }
 }
 
-function template_preprocess_views_slideshow_cycle_main_frame_row_item(&$vars) {
+function _views_slideshow_cycle_preprocess_views_slideshow_cycle_main_frame_row_item(&$vars) {
   $vars['classes_array'][] = 'views-row views-row-' . $vars['item_count'];
   if (!$vars['item_count']) {
     $vars['classes_array'][] = 'views-row-first';
@@ -156,5 +175,12 @@ function template_preprocess_views_slideshow_cycle_main_frame_row_item(&$vars) {
   }
   else {
     $vars['classes_array'][] = 'views-row-odd';
+  }
+  
+  /**
+   * Support custom row classes.
+   */
+  if ($row_class = $vars['view']->style_plugin->get_row_class($vars['item_count'])) {
+    $vars['classes_array'][] = $row_class;
   }
 }
