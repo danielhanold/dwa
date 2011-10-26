@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @info
+ * Display logic related to the "site" content type.
+ */
+
+/**
+ * Implementation of template_preprocess_node(&$variables)
+ */
+function dwa_site_preprocess_node(&$variables) {
+  if (isset($variables['type']) && $variables['type'] == 'site') {
+    $node = $variables['node'];
+    dpm($node);
+    
+    // Override the default node display.
+    dpr($variables);
+    
+    $variables['content'] = array('body' => 'test');
+  }
+}
