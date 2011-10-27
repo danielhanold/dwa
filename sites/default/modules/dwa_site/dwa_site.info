@@ -3,3 +3,4 @@ description = "Site Display Functionality"
 package = DWA
 core = 7.x
 files[] = dwa_site.module
+stylesheets[screen][] = styles/dwa_site.node.css

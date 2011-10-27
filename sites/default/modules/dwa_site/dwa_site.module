@@ -6,7 +6,19 @@
  */
 
 /**
- * Implementation of template_preprocess_node(&$variables)
+ * Implements hook_views_api().
+ */
+function dwa_site_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'dwa_site') . '/includes/views',
+  );
+}
+
+
+
+/**
+ * Implements hook_preprocess_node(&$variables)
  */
 function dwa_site_preprocess_node(&$variables) {
   if (isset($variables['type']) && $variables['type'] == 'site') {
@@ -17,11 +29,23 @@ function dwa_site_preprocess_node(&$variables) {
     // Override the default node display.    
     $variables['content'] = array();
     
-    // Add the slideshow for this site.
+    // Add a link to visit the site.
     $variables['content'][] = array(
-      '#markup' => views_embed_view('sod_front', 'default', $node->nid),
+      '#type' => 'link',
+      '#title' => t('Visit Site'),
+      '#href' => $node->field_site_link['und'][0]['url'],
+      '#prefix' => '<div id="site-link">',
+      '#suffix' => '</div>',
+      '#attributes' => array(
+        'target' => array('_blank'),
+      ),
     );
     
+    // Add the slideshow for this site.
+    $variables['content'][] = array(
+      '#markup' => views_embed_view('site_slideshow', 'default', $node->nid),
+    );
+
     // Add the category.
     $variables['content'][] = $content['field_site_category'];
   }
