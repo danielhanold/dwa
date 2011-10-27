@@ -11,11 +11,18 @@
 function dwa_site_preprocess_node(&$variables) {
   if (isset($variables['type']) && $variables['type'] == 'site') {
     $node = $variables['node'];
-    dpm($node);
+    $nid = $node->nid;
+    $content = $variables['content'];
+
+    // Override the default node display.    
+    $variables['content'] = array();
     
-    // Override the default node display.
-    dpr($variables);
+    // Add the slideshow for this site.
+    $variables['content'][] = array(
+      '#markup' => views_embed_view('sod_front', 'default', $node->nid),
+    );
     
-    $variables['content'] = array('body' => 'test');
+    // Add the category.
+    $variables['content'][] = $content['field_site_category'];
   }
 }
