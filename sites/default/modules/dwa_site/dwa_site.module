@@ -59,9 +59,37 @@ function dwa_site_preprocess_node(&$variables) {
       '#prefix' => '<div id="node-site-footer">',
       '#suffix' => '</div>',      
       '#weight' => 3,
-    ); 
+    );
     
-
+    // Add some bogus element.
+    $variables['content']['site_footer'] = array(
+      '#type' => 'container',
+      '#weight' => 4,
+      '#attributes' => array(
+        'class' => array('site-footer'),
+      ),
+    );
+    $variables['content']['site_footer']['item_list'] = array(
+      '#theme' => 'item_list',
+      '#items' => array('test1', 'test2', 'test3'),
+      '#title' => t('Test Items'),
+      '#attributes' => array(
+        'class' => 'testing',
+      ),
+      '#weight' => 3,
+    );
+    $variables['content']['site_footer']['site_link_1'] = array(
+      '#type' => 'link',
+      '#title' => t('Visit Site'),
+      '#href' => $node->field_site_link['und'][0]['url'],
+      '#prefix' => '<div id="site-link">',
+      '#suffix' => '</div>',
+      '#attributes' => array(
+        'target' => array('_blank'),
+      ),
+      '#weight' => 1,
+    );     
+    
     // Add the category.
     $variables['content'][] = $content['field_site_category'];
   }
