@@ -39,12 +39,28 @@ function dwa_site_preprocess_node(&$variables) {
       '#attributes' => array(
         'target' => array('_blank'),
       ),
+      '#weight' => 1,
     );
     
     // Add the slideshow for this site.
     $variables['content'][] = array(
       '#markup' => views_embed_view('site_slideshow', 'default', $node->nid),
+      '#weight' => 2,
     );
+
+    // Add some bogus element.
+    $variables['content'][] = array(
+      '#theme' => 'item_list',
+      '#items' => array('test1', 'test2', 'test3'),
+      '#title' => t('Test Items'),
+      '#attributes' => array(
+        'class' => 'testing',
+      ),
+      '#prefix' => '<div id="node-site-footer">',
+      '#suffix' => '</div>',      
+      '#weight' => 3,
+    ); 
+    
 
     // Add the category.
     $variables['content'][] = $content['field_site_category'];
