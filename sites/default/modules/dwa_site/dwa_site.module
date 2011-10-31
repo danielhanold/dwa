@@ -29,8 +29,17 @@ function dwa_site_preprocess_node(&$variables) {
     // Override the default node display.    
     $variables['content'] = array();
     
+    // Add a container for site meta information at the top.    
+    $variables['content']['site_meta_top'] = array(
+      '#type' => 'container',
+      '#weight' => 0,
+      '#attributes' => array(
+        'class' => array('site-meta site-meta-top'),
+      ),
+    );
+        
     // Add a link to visit the site.
-    $variables['content'][] = array(
+    $variables['content']['site_meta_top']['site_link'] = array(
       '#type' => 'link',
       '#title' => t('Visit Site'),
       '#href' => $node->field_site_link['und'][0]['url'],
@@ -47,38 +56,25 @@ function dwa_site_preprocess_node(&$variables) {
       '#markup' => views_embed_view('site_slideshow', 'default', $node->nid),
       '#weight' => 2,
     );
-
-    // Add some bogus element.
-    $variables['content'][] = array(
-      '#theme' => 'item_list',
-      '#items' => array('test1', 'test2', 'test3'),
-      '#title' => t('Test Items'),
-      '#attributes' => array(
-        'class' => 'testing',
-      ),
-      '#prefix' => '<div id="node-site-footer">',
-      '#suffix' => '</div>',      
-      '#weight' => 3,
-    );
     
-    // Add some bogus element.
-    $variables['content']['site_footer'] = array(
+    // Add a container for site meta information at the bottom.
+    $variables['content']['site_meta_bottom'] = array(
       '#type' => 'container',
       '#weight' => 4,
       '#attributes' => array(
-        'class' => array('site-footer'),
+        'class' => array('site-meta site-meta-bottom'),
       ),
     );
-    $variables['content']['site_footer']['item_list'] = array(
-      '#theme' => 'item_list',
-      '#items' => array('test1', 'test2', 'test3'),
-      '#title' => t('Test Items'),
-      '#attributes' => array(
-        'class' => 'testing',
-      ),
+    
+    $variables['content']['site_meta_bottom']['description'] = array(
+      '#type' => 'markup',
+      '#markup' => $node->body['und'][0]['safe_value'],
+      '#prefix' => '<div id="site-meta-description">',
+      '#suffix' => '</div>',
       '#weight' => 3,
     );
-    $variables['content']['site_footer']['site_link_1'] = array(
+    
+    $variables['content']['site_meta_bottom']['site_link_1'] = array(
       '#type' => 'link',
       '#title' => t('Visit Site'),
       '#href' => $node->field_site_link['und'][0]['url'],
@@ -90,7 +86,5 @@ function dwa_site_preprocess_node(&$variables) {
       '#weight' => 1,
     );     
     
-    // Add the category.
-    $variables['content'][] = $content['field_site_category'];
   }
 }
