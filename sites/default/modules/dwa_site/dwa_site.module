@@ -26,10 +26,12 @@ function dwa_site_preprocess_node(&$variables) {
     $nid = $node->nid;
     $content = $variables['content'];
 
-    // Override the default node display.    
+    // Override the default node display.
     $variables['content'] = array();
-    
-    // Add a container for site meta information at the top.    
+
+    /**
+     * Site Meta Top
+     */
     $variables['content']['site_meta_top'] = array(
       '#type' => 'container',
       '#weight' => 0,
@@ -37,7 +39,16 @@ function dwa_site_preprocess_node(&$variables) {
         'class' => array('site-meta site-meta-top'),
       ),
     );
-        
+
+    // Add the title in the content section.
+    $variables['content']['site_meta_top']['site_title'] = array(
+      '#type' => 'markup',
+      '#weight' => 1,
+      '#markup' => $node->title,
+      '#prefix' => '<h2>',
+      '#suffix' => '</h2>',
+    );
+
     // Add a link to visit the site.
     $variables['content']['site_meta_top']['site_link'] = array(
       '#type' => 'link',
@@ -48,16 +59,40 @@ function dwa_site_preprocess_node(&$variables) {
       '#attributes' => array(
         'target' => array('_blank'),
       ),
-      '#weight' => 1,
+      '#weight' => 2,
     );
-    
-    // Add the slideshow for this site.
-    $variables['content'][] = array(
+
+    // Add an array of awards.
+    $awards = _dwa_site_determine_awards($node);
+    if (!empty($awards)) {
+      // Add a container for the awards.
+      $variables['content']['site_meta_top']['awards'] = array(
+        '#type' => 'container',
+        '#attributes' => array('class' => 'site-meta-top-awards'),
+        '#weight' => 3,
+      );
+      
+      foreach ($awards as $k => $v) {
+        $variables['content']['site_meta_top']['awards'][$k] = array(
+          '#markup' => $v,
+          '#prefix' => '<div class="site-award" id="' . str_replace('_', '-', $k) . '">',
+          '#suffix' => '</div>'
+        );
+      }
+    }
+
+    /**
+     * Site Slideshow.
+     */
+    $variables['content']['site_slideshow'] = array(
       '#markup' => views_embed_view('site_slideshow', 'default', $node->nid),
       '#weight' => 2,
     );
-    
-    // Add a container for site meta information at the bottom.
+
+
+    /**
+     * Site Meta Bottom.
+     */
     $variables['content']['site_meta_bottom'] = array(
       '#type' => 'container',
       '#weight' => 4,
@@ -65,26 +100,76 @@ function dwa_site_preprocess_node(&$variables) {
         'class' => array('site-meta site-meta-bottom'),
       ),
     );
-    
+
     $variables['content']['site_meta_bottom']['description'] = array(
       '#type' => 'markup',
       '#markup' => $node->body['und'][0]['safe_value'],
       '#prefix' => '<div id="site-meta-description">',
       '#suffix' => '</div>',
-      '#weight' => 3,
     );
-    
-    $variables['content']['site_meta_bottom']['site_link_1'] = array(
+
+    $variables['content']['site_meta_bottom']['credit'] = array(
       '#type' => 'link',
-      '#title' => t('Visit Site'),
-      '#href' => $node->field_site_link['und'][0]['url'],
-      '#prefix' => '<div id="site-link">',
+      '#title' => decode_entities($node->field_site_credit['und'][0]['title']),
+      '#href' => $node->field_site_credit['und'][0]['url'],
+      '#prefix' => '<div id="site-link-credit">',
       '#suffix' => '</div>',
       '#attributes' => array(
         'target' => array('_blank'),
       ),
-      '#weight' => 1,
-    );     
-    
+    );
+
+    // Add comment field at the bottom.
+    $variables['content']['comments'] = $content['comments'];
+
   }
+}
+
+
+
+/**
+ * Determine awards for a site.
+ *
+ * @param $node
+ *   Node Object.
+ *
+ * @return
+ *   Array of awards.
+ */
+function _dwa_site_determine_awards($node) {
+  $awards = array();
+  $field_names = array('field_site_award_day', 'field_site_award_week', 'field_site_award_month');
+  foreach ($field_names as $field_name) {
+    if (isset($node->{$field_name}['und'][0]['value'])) {
+      switch ($field_name) {
+        case 'field_site_award_day':
+          $award_text_replacements = array(
+            '!award_type' => DWA_VOTING_AWARD_NAME_SOD,
+            '!date' => date('F j, Y', $node->{$field_name}['und'][0]['value']),
+          );
+          $award_text = t('Voted "!award_type" for !date', $award_text_replacements);
+          break;
+
+        case 'field_site_award_week':
+          $award_text_replacements = array(
+            '!award_type' => DWA_VOTING_AWARD_NAME_SOW,
+            '!date' => date('F j, Y', $node->{$field_name}['und'][0]['value']),
+          );
+          $award_text = t('Voted "!award_type" for the week of !date', $award_text_replacements);
+          break;
+
+        case 'field_site_award_month':
+          $award_text_replacements = array(
+            '!award_type' => DWA_VOTING_AWARD_NAME_SOM,
+            '!date' => date('F, Y', $node->{$field_name}['und'][0]['value']),
+          );
+          $award_text = t('Voted "!award_type" for the month of !date', $award_text_replacements);
+          break;
+
+      }
+      $awards[$field_name] = $award_text;
+    }
+  }
+
+  return $awards;
 }
