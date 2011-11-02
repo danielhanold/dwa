@@ -23,6 +23,10 @@ function dwa_api_views_default_views() {
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'full';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '16';
+  $handler->display->display_options['pager']['options']['offset'] = '0';
+  $handler->display->display_options['pager']['options']['id'] = '0';
+  $handler->display->display_options['pager']['options']['expose']['items_per_page_options_all'] = 0;
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'fields';
   /* Field: Content: Site Thumbnail */
@@ -88,10 +92,62 @@ function dwa_api_views_default_views() {
   $handler->display->display_options['filters']['type']['value'] = array(
     'site' => 'site',
   );
+  /* Filter criterion: Content: Site of the Day (field_site_award_day) */
+  $handler->display->display_options['filters']['field_site_award_day_value']['id'] = 'field_site_award_day_value';
+  $handler->display->display_options['filters']['field_site_award_day_value']['table'] = 'field_data_field_site_award_day';
+  $handler->display->display_options['filters']['field_site_award_day_value']['field'] = 'field_site_award_day_value';
+  $handler->display->display_options['filters']['field_site_award_day_value']['operator'] = 'empty';
+  $handler->display->display_options['filters']['field_site_award_day_value']['granularity'] = 'second';
+  /* Filter criterion: Content: Site of the Week (field_site_award_week) */
+  $handler->display->display_options['filters']['field_site_award_week_value']['id'] = 'field_site_award_week_value';
+  $handler->display->display_options['filters']['field_site_award_week_value']['table'] = 'field_data_field_site_award_week';
+  $handler->display->display_options['filters']['field_site_award_week_value']['field'] = 'field_site_award_week_value';
+  $handler->display->display_options['filters']['field_site_award_week_value']['operator'] = 'empty';
+  $handler->display->display_options['filters']['field_site_award_week_value']['granularity'] = 'second';
+  /* Filter criterion: Content: Site of the Month (field_site_award_month) */
+  $handler->display->display_options['filters']['field_site_award_month_value']['id'] = 'field_site_award_month_value';
+  $handler->display->display_options['filters']['field_site_award_month_value']['table'] = 'field_data_field_site_award_month';
+  $handler->display->display_options['filters']['field_site_award_month_value']['field'] = 'field_site_award_month_value';
+  $handler->display->display_options['filters']['field_site_award_month_value']['operator'] = 'empty';
+  $handler->display->display_options['filters']['field_site_award_month_value']['granularity'] = 'second';
   
-  /* Display: Shortlist */
-  $handler = $view->new_display('block', 'Shortlist', 'block_shortlist');
+  /* Display: Block */
+  $handler = $view->new_display('block', 'Block', 'block_shortlist');
+  $handler->display->display_options['defaults']['pager'] = FALSE;
+  $handler->display->display_options['pager']['type'] = 'some';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '4';
+  $handler->display->display_options['pager']['options']['offset'] = '0';
   $handler->display->display_options['block_description'] = 'Shortlist';
+  
+  /* Display: Page */
+  $handler = $view->new_display('page', 'Page', 'page_shortlist');
+  $handler->display->display_options['defaults']['pager'] = FALSE;
+  $handler->display->display_options['pager']['type'] = 'full';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '16';
+  $handler->display->display_options['pager']['options']['offset'] = '0';
+  $handler->display->display_options['pager']['options']['id'] = '0';
+  $handler->display->display_options['pager']['options']['expose']['items_per_page_options_all'] = 0;
+  $handler->display->display_options['path'] = 'shortlist';
+  $handler->display->display_options['menu']['type'] = 'normal';
+  $handler->display->display_options['menu']['title'] = 'Shortlist';
+  $handler->display->display_options['menu']['description'] = 'Recently added sites';
+  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['name'] = 'main-menu';
+  $translatables['shortlist'] = array(
+    t('Master'),
+    t('Shortlist'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('Items per page'),
+    t('- All -'),
+    t('Offset'),
+    t('Block'),
+    t('Page'),
+  );
   $views[$view->name] = $view;
 
   // At the end, return array of default views.

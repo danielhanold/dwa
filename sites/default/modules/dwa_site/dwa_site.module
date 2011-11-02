@@ -107,11 +107,13 @@ function dwa_site_preprocess_node(&$variables) {
       '#prefix' => '<div id="site-meta-description">',
       '#suffix' => '</div>',
     );
-
+    
+    $credit_title = (isset($node->field_site_credit['und'][0]['title'])) ? $node->field_site_credit['und'][0]['title'] : '';
+    $credit_url = (isset($node->field_site_credit['und'][0]['url'])) ? $node->field_site_credit['und'][0]['url'] : '';
     $variables['content']['site_meta_bottom']['credit'] = array(
       '#type' => 'link',
-      '#title' => decode_entities($node->field_site_credit['und'][0]['title']),
-      '#href' => $node->field_site_credit['und'][0]['url'],
+      '#title' => $credit_title,
+      '#href' => $credit_url,
       '#prefix' => '<div id="site-link-credit">',
       '#suffix' => '</div>',
       '#attributes' => array(
